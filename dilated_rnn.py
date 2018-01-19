@@ -39,10 +39,10 @@ class DilatedRNN(nn.Module):
         else:
             dilated_num_steps = num_steps // rate
 
-        # If num_steps is 5, rate is 2, inputs = [x1, x2, x3, x4, x5]
+        # E.g. if num_steps is 5, rate is 2 and inputs = [x1, x2, x3, x4, x5]
         # we do zero padding --> [x1, x2, x3, x4, x5, 0]
         # we want to have --> [[x1; x2], [x3; x4], [x_5; 0]]
-        # where the length is the celling of dilated_num_steps
+        # where the length is dilated_num_steps
         dilated_inputs = #...
 
         # dilated_inputs needs to be of size [dilated_num_steps, batch_size, input_size]
@@ -65,5 +65,4 @@ class DilatedRNN(nn.Module):
             x = _dilated_RNN(cell, x, dilation)
 
         return x
-
 
