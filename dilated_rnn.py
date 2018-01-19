@@ -50,7 +50,7 @@ class DilatedRNN(nn.Module):
         
         # reshape dilated_outputs back to [rate, batch_size, input_size]
 
-        # remove padded zeros so output is [num_steps, batch_size, input_size]
+        # remove padded zeros so output is [??, batch_size, input_size]
 
         # return output
 
