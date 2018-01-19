@@ -29,8 +29,6 @@ class DilatedRNN(nn.Module):
     def _dilated_RNN(self, cell, inputs, rate):
         num_steps = len(inputs)
 
-        EVEN = (num_steps % rate) == 0
-
         if (num_steps % rate):
             # Zero padding with tensor of size [batch_size, input_size]
             zero_tensor = torch.zeros_like(inputs[0])
@@ -44,15 +42,17 @@ class DilatedRNN(nn.Module):
         # If num_steps is 5, rate is 2, inputs = [x1, x2, x3, x4, x5]
         # we do zero padding --> [x1, x2, x3, x4, x5, 0]
         # we want to have --> [[x1; x2], [x3; x4], [x_5; 0]]
-        # where the length is the celling of num_steps/rate
+        # where the length is the celling of dilated_num_steps
         dilated_inputs = #...
 
+        # dilated_inputs needs to be of size [dilated_num_steps, batch_size, input_size]
         dilated_outputs, _ = cell(dilated_inputs)
         
-        # reshape?
+        # reshape dilated_outputs back to [rate, batch_size, input_size]
 
-        # remove padded zeros
+        # remove padded zeros so output is [num_steps, batch_size, input_size]
 
+        # return output
 
     """
     Args: 
