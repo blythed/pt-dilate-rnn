@@ -43,12 +43,13 @@ class DilatedRNN(nn.Module):
         # we do zero padding --> [x1, x2, x3, x4, x5, 0]
         # we want to have --> [[x1; x2], [x3; x4], [x_5; 0]]
         # where the length is dilated_num_steps
-        dilated_inputs = #...
+        dilated_inputs = torch.cat((inputs[i * rate:(i + 1) * rate] for i in range(dialated_n_steps)), dim=0)
 
         # dilated_inputs needs to be of size [dilated_num_steps, batch_size, input_size]
         dilated_outputs, _ = cell(dilated_inputs)
         
         # reshape dilated_outputs back to [rate, batch_size, input_size]
+        
 
         # remove padded zeros so output is [??, batch_size, input_size]
 
