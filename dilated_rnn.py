@@ -50,11 +50,11 @@ class DilatedRNN(nn.Module):
         # output is of size [dilated_num_steps, rate*batch_size, hidden_size]
 
         # reshape it to [dilated_num_steps*rate, batch_size, hidden_size]
-        
+        outputs = dilated_outputs.view(dilated_num_steps*rate, -1, -1)
 
         # remove padded zeros so output is [num_steps, batch_size, hidden_size]
         # and return
-        return dilated_outputs[:num_steps]
+        return outputs[:num_steps]
 
     """
     Args: 
