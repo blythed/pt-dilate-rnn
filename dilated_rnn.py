@@ -7,13 +7,14 @@ class DilatedRNN(nn.Module):
     mode: rnn type, 'RNN', 'LSTM', 'GRU'
     input_size: input size of the first layer 
     dilations: list of dilations for each layer
-    hidden_size: list of hidden sizes for rnn in each layer
+    hidden_sizes: list of hidden sizes for rnn in each layer
     """
     def __init__(self, mode, input_size, dilations, hidden_sizes):
         super(DilatedRNN, self).__init__()
 
         assert len(hidden_sizes) == len(dilations)
 
+        self.dilations = dilations
         self.cells = []
         next_input_size = input_size
 
@@ -73,6 +74,6 @@ class DilatedRNN(nn.Module):
         x = inputs.clone()
 
         for cell, dilation in zip(self.cells, self.dilations):
-            x = _dilated_RNN(cell, x, dilation)
+            x = self._dilated_RNN(cell, x, dilation)
 
         return x
