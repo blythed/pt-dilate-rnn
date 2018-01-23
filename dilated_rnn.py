@@ -5,11 +5,12 @@ class DilatedRNN(nn.Module):
     r"""Multilayer Dilated RNN.
     Args:
     mode: rnn type, 'RNN', 'LSTM', 'GRU'
-    input_size: input size of the first layer 
+    input_size: input size of the first layer
     dilations: list of dilations for each layer
     hidden_sizes: list of hidden sizes for rnn in each layer
+    dropout: dropout prob.
     """
-    def __init__(self, mode, input_size, dilations, hidden_sizes):
+    def __init__(self, mode, input_size, dilations, hidden_sizes, dropout):
         super(DilatedRNN, self).__init__()
 
         assert len(hidden_sizes) == len(dilations)
@@ -18,13 +19,18 @@ class DilatedRNN(nn.Module):
         self.cells = []
         next_input_size = input_size
 
+        # TODO: have a single hidden size
+
         for hidden_size in hidden_sizes:
             if mode == "RNN":
-                cell = nn.RNN(input_size=next_input_size, hidden_size=hidden_size, num_layers=1)
+                cell = nn.RNN(input_size=next_input_size, hidden_size=hidden_size,
+                              dropout=dropout, num_layers=1)
             elif mode == "LSTM":
-                cell = nn.LSTM(input_size=next_input_size, hidden_size=hidden_size, num_layers=1)
+                cell = nn.LSTM(input_size=next_input_size, hidden_size=hidden_size,
+                               dropout=dropout, num_layers=1)
             elif mode == "GRU":
-                cell = nn.GRU(input_size=next_input_size, hidden_size=hidden_size, num_layers=1)
+                cell = nn.GRU(input_size=next_input_size, hidden_size=hidden_size,
+                              dropout=dropout, num_layers=1)
             self.cells.append(cell)
             next_input_size = hidden_size
 
@@ -36,7 +42,9 @@ class DilatedRNN(nn.Module):
     output: [num_steps, batch_size, hidden_size]
     """
     def _dilated_RNN(self, cell, inputs, rate):
-        num_steps = len(inputs)
+        num_steps = len(inputs) # time steps
+        if rate < 0 or rate >= num_steps:
+            raise ValueError('The \'rate\' variable needs to be adjusted.')
 
         if num_steps % rate:
             # Zero padding with tensor of size [batch_size, input_size]
@@ -52,7 +60,7 @@ class DilatedRNN(nn.Module):
         # we do zero padding --> [x1, x2, x3, x4, x5, 0]
         # we want to have --> [[x1; x2], [x3; x4], [x_5; 0]]
         # where the length is dilated_num_steps
-        dilated_inputs = torch.stack([inputs[i * rate:(i + 1) * rate] for i in range(dilated_num_steps)]).view(dilated_num_steps, -1, inputs.shape[2])
+        dilated_inputs = torch.stack([inputs[i*rate : (i + 1)*rate] for i in range(dilated_num_steps)]).view(dilated_num_steps, -1, inputs.shape[2])
 
         # dilated_inputs is of size [dilated_num_steps, rate*batch_size, input_size]
 
@@ -72,7 +80,7 @@ class DilatedRNN(nn.Module):
     output: [num_steps, batch_size, hidden_size]
     """
     def forward(self, inputs):
-        x = inputs.clone()
+        x = inputs.clone() ## ??
 
         for cell, dilation in zip(self.cells, self.dilations):
             x = self._dilated_RNN(cell, x, dilation)
