@@ -41,47 +41,54 @@ class DilatedRNN(nn.Module):
     rate: integer
     output: [num_steps, batch_size, hidden_size]
     """
-    def _dilated_RNN(self, cell, inputs, rate):
-        num_steps = len(inputs) # time steps
-        if rate < 0 or rate >= num_steps:
-            raise ValueError('The \'rate\' variable needs to be adjusted.')
+    def _padinputs(self, inputs, rate):
+
+        num_steps = len(inputs)
 
         if num_steps % rate:
-            # Zero padding with tensor of size [batch_size, input_size]
             zero_tensor = torch.zeros_like(inputs[0])
 
             dilated_num_steps = num_steps // rate + 1
-            for _ in range(dilated_num_steps*rate - num_steps):
-                torch.cat((inputs, zero_tensor.unsqueeze(0)), out=inputs)
-        else:
-            dilated_num_steps = num_steps // rate
+            for _ in range(dilated_num_steps * rate - num_steps):
+                inputs = torch.cat((inputs, zero_tensor.unsqueeze(0)))
 
-        # E.g. if num_steps is 5, rate is 2 and inputs = [x1, x2, x3, x4, x5]
-        # we do zero padding --> [x1, x2, x3, x4, x5, 0]
-        # we want to have --> [[x1; x2], [x3; x4], [x_5; 0]]
-        # where the length is dilated_num_steps
-        dilated_inputs = torch.stack([inputs[i*rate : (i + 1)*rate] for i in range(dilated_num_steps)]).view(dilated_num_steps, -1, inputs.shape[2])
+        return inputs
+
+    def _stack(self, x, rate):
+        tostack = [x[i::rate] for i in range(rate)]
+        stacked = torch.cat(tostack, 1)
+
+        return stacked
+
+    def _unstack(self, x, rate):
+        outputs = x.view(x.size(0) * rate, -1, x.size(2))
+
+        return outputs
+
+    def _dilated_RNN(self, cell, inputs, rate):
+
+        # add zeros to last few time steps if not zero mod rate
+        padded_inputs = self._padinputs(inputs, rate)
 
         # dilated_inputs is of size [dilated_num_steps, rate*batch_size, input_size]
+        dilated_inputs = self._stack(padded_inputs, rate)
 
-        dilated_outputs, _ = cell(dilated_inputs)
         # output is of size [dilated_num_steps, rate*batch_size, hidden_size]
+        dilated_outputs, _ = cell(dilated_inputs)
 
         # reshape it to [dilated_num_steps*rate, batch_size, hidden_size]
-        outputs = dilated_outputs.view(dilated_num_steps*rate, -1, dilated_outputs.shape[2])
+        outputs = self._unstack(dilated_outputs, rate)
+        #outputs = dilated_outputs.view(dilated_num_steps*rate, -1, dilated_outputs.shape[2])
 
         # remove padded zeros so output is [num_steps, batch_size, hidden_size]
-        # and return
-        return outputs[:num_steps]
+        return outputs[:inputs.size(0)]
 
     """
     Args:
     input: [num_steps, batch_size, input_size]
     output: [num_steps, batch_size, hidden_size]
     """
-    def forward(self, inputs):
-        x = inputs.clone() ## ??
-
+    def forward(self, x):
         for cell, dilation in zip(self.cells, self.dilations):
             x = self._dilated_RNN(cell, x, dilation)
 
