@@ -19,8 +19,6 @@ class DilatedRNN(nn.Module):
         self.cells = []
         next_input_size = input_size
 
-        # TODO: have a single hidden size
-
         for hidden_size in hidden_sizes:
             if mode == "RNN":
                 cell = nn.RNN(input_size=next_input_size, hidden_size=hidden_size,
