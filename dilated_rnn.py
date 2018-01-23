@@ -61,6 +61,7 @@ class DilatedRNN(nn.Module):
         # we want to have --> [[x1; x2], [x3; x4], [x_5; 0]]
         # where the length is dilated_num_steps
         dilated_inputs = torch.stack([inputs[i*rate : (i + 1)*rate] for i in range(dilated_num_steps)]).view(dilated_num_steps, -1, inputs.shape[2])
+
         # dilated_inputs is of size [dilated_num_steps, rate*batch_size, input_size]
 
         dilated_outputs, _ = cell(dilated_inputs)
