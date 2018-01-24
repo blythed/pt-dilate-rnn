@@ -47,9 +47,9 @@ class DilatedRNN(nn.Module):
                               dropout=dropout, num_layers=1))
             next_input_size = hidden_size
 
-    def cuda(self, device=None):
+    def cuda(self):
         for cell in self.cells:
-            cell.cuda(device=device)
+            cell.cuda()
 
     def _padinputs(self, inputs, rate):
 
