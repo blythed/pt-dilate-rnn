@@ -144,7 +144,7 @@ class TestReuse(unittest.TestCase):
 
         drnn(x)
 
-        self.assertTrue(torch.equal(x, y))
+        self.assertTrue(torch.equal(x.data, y.data))
 
 
 if __name__ == "__main__":
