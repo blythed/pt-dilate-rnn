@@ -7,7 +7,7 @@ import random
 use_cuda = torch.cuda.is_available()
 
 
-class TestStackInputs(unittest.TestCase):
+class TestPadInputs(unittest.TestCase):
     def test(self):
         
         drnn = DilatedRNN(
@@ -96,8 +96,6 @@ class TestUnstackInputs(unittest.TestCase):
             x = x.cuda()
             drnn.cuda()
 
-        roundtrip = drnn._unstack(drnn._stack(x, 4), 4)
-
         self.assertTrue(torch.equal(drnn._unstack(drnn._stack(x, 4), 4), x))
 
 
@@ -156,12 +154,26 @@ class ToyModel(torch.nn.Module):
             mode=torch.nn.GRU,
             input_size=26,
             dilations=[1, 2],
-            hidden_sizes=[26, 26],
-            dropout=0.5
+            hidden_sizes=[128, 128],
+            dropout=0.0
         )
+        self.project = torch.nn.Linear(128, 26)
 
     def forward(self, input):
-        return self.drnn(self.embedding(input))
+        out = self.drnn(self.embedding(input))
+        return self.project(out)
+
+
+class ToyModelOther(torch.nn.Module):
+    def __init__(self):
+        torch.nn.Module.__init__(self)
+        self.embedding = torch.nn.Embedding(26, 26)
+        self.drnn = torch.nn.GRU(26, 128)
+        self.project = torch.nn.Linear(128, 26)
+
+    def forward(self, input):
+        out = self.drnn(self.embedding(input))[0]
+        return self.project(out)
 
 
 class TestLearn(unittest.TestCase):
@@ -176,10 +188,10 @@ class TestLearn(unittest.TestCase):
         data = torch.autograd.Variable(data)
 
         model = ToyModel()
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        optimizer = torch.optim.SGD(model.parameters(), lr=10.0)
         criterion = torch.nn.CrossEntropyLoss()
 
-        for epoch in range(20):
+        for epoch in range(1):
             for i in range(100):
 
                 batch = data[:, i * 10: (i + 1) * 10]
@@ -190,14 +202,19 @@ class TestLearn(unittest.TestCase):
 
                 loss = 0
 
-                for i in range(output.size(1)):
-                    loss += criterion(output[:, i, :], batch[1:, i])
+                for j in range(output.size(1)):
+                    loss += criterion(output[:, j, :], batch[1:, j])
+
+                loss = loss / output.size(1)
 
                 loss.backward()
 
                 optimizer.step()
 
-                print(loss.data[0])
+                if i % 10 == 0:
+                    print(loss.data[0])
+
+        self.assertTrue(loss.data[0] < 0.1)
 
 
 
