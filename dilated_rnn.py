@@ -1,6 +1,10 @@
 import torch
 import torch.nn as nn
 
+
+use_cuda = torch.cuda.is_available()
+
+
 class DilatedRNN(nn.Module):
     """
     Args:
@@ -27,8 +31,6 @@ class DilatedRNN(nn.Module):
           given as the input, the output will also be a packed sequence.
         - **h_n** hidden state at last time point
 
-    Attributes:
-
     """
     def __init__(self, mode, input_size, dilations, hidden_sizes, dropout):
 
@@ -48,13 +50,19 @@ class DilatedRNN(nn.Module):
     def _padinputs(self, inputs, rate):
 
         num_steps = len(inputs)
-
         if num_steps % rate:
-            zero_tensor = torch.zeros_like(inputs[0])
-
             dilated_num_steps = num_steps // rate + 1
-            for _ in range(dilated_num_steps * rate - num_steps):
-                inputs = torch.cat((inputs, zero_tensor.unsqueeze(0)))
+
+            zeros_tensor = torch.zeros(dilated_num_steps * rate - num_steps,
+                                       inputs.size(1),
+                                       inputs.size(2))
+
+            if use_cuda:
+                zeros_tensor = zeros_tensor.cuda()
+
+            zeros_tensor = torch.autograd.Variable(zeros_tensor)
+
+            inputs = torch.cat((inputs, zeros_tensor))
 
         return inputs
 
