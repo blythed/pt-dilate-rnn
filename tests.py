@@ -151,9 +151,6 @@ class ToyModel(torch.nn.Module):
         torch.nn.Module.__init__(self)
         self.embedding = torch.nn.Embedding(26, 26)
         self.drnn = DilatedRNN(
-            mode=torch.nn.GRU,
-            input_size=26,
-            dilations=[1, 2],
             hidden_sizes=[128, 128],
             dropout=0.0
         )
@@ -215,6 +212,7 @@ class TestLearn(unittest.TestCase):
                     print(loss.data[0])
 
         self.assertTrue(loss.data[0] < 0.1)
+
 
 
 
