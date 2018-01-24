@@ -1,14 +1,16 @@
 import unittest
 import torch
 from dilated_rnn import DilatedRNN
-import numpy
+
+
+use_cuda = torch.cuda.is_available()
 
 
 class TestStackInputs(unittest.TestCase):
     def test(self):
         
         drnn = DilatedRNN(
-            mode='GRU',
+            mode=torch.nn.GRU,
             input_size=13,
             dilations=[1, 2, 4, 8],
             hidden_sizes=[8, 16, 32, 64],
@@ -16,6 +18,10 @@ class TestStackInputs(unittest.TestCase):
         )
 
         x = torch.randn(15, 2, 13)
+
+        if use_cuda:
+            x = x.cuda()
+            drnn.cuda()
 
         for rate in [2, 8]:
 
@@ -48,7 +54,7 @@ class TestStackInputs(unittest.TestCase):
     def test(self):
 
         drnn = DilatedRNN(
-            mode='GRU',
+            mode=torch.nn.GRU,
             input_size=13,
             dilations=[1, 2, 4, 8],
             hidden_sizes=[8, 16, 32, 64],
@@ -56,6 +62,10 @@ class TestStackInputs(unittest.TestCase):
         )
 
         x = torch.randn(16, 2, 13)
+
+        if use_cuda:
+            x = x.cuda()
+            drnn.cuda()
 
         chunked = drnn._stack(x, 4)
 
@@ -74,7 +84,7 @@ class TestUnstackInputs(unittest.TestCase):
     def test(self):
 
         drnn = DilatedRNN(
-            mode='GRU',
+            mode=torch.nn.GRU,
             input_size=13,
             dilations=[1, 2, 4, 8],
             hidden_sizes=[8, 16, 32, 64],
@@ -82,6 +92,10 @@ class TestUnstackInputs(unittest.TestCase):
         )
 
         x = torch.randn(16, 2, 13)
+
+        if use_cuda:
+            x = x.cuda()
+            drnn.cuda()
 
         roundtrip = drnn._unstack(drnn._stack(x, 4), 4)
 
@@ -92,7 +106,7 @@ class TestForward(unittest.TestCase):
     def test(self):
 
         drnn = DilatedRNN(
-            mode='GRU',
+            mode=torch.nn.GRU,
             input_size=13,
             dilations=[1, 2, 4, 8],
             hidden_sizes=[8, 16, 32, 64],
@@ -100,6 +114,10 @@ class TestForward(unittest.TestCase):
         )
 
         x = torch.randn(15, 2, 13)
+
+        if use_cuda:
+            x = x.cuda()
+            drnn.cuda()
 
         outputs = drnn(torch.autograd.Variable(x))
 
@@ -111,7 +129,7 @@ class TestForward(unittest.TestCase):
 class TestReuse(unittest.TestCase):
     def test(self):
         drnn = DilatedRNN(
-            mode='GRU',
+            mode=torch.nn.GRU,
             input_size=13,
             dilations=[1, 2, 4, 8],
             hidden_sizes=[8, 16, 32, 64],
@@ -120,12 +138,15 @@ class TestReuse(unittest.TestCase):
 
         x = torch.autograd.Variable(torch.randn(15, 2, 13))
 
+        if use_cuda:
+            x = x.cuda()
+            drnn.cuda()
+
         y = x.clone()
 
         drnn(x)
 
         self.assertTrue(torch.equal(x, y))
-
 
 
 if __name__ == "__main__":

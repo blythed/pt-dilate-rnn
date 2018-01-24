@@ -2,15 +2,36 @@ import torch
 import torch.nn as nn
 
 class DilatedRNN(nn.Module):
-    r"""Multilayer Dilated RNN.
+    """
     Args:
-    mode: rnn type, 'RNN', 'LSTM', 'GRU'
-    input_size: input size of the first layer
-    dilations: list of dilations for each layer
-    hidden_sizes: list of hidden sizes for rnn in each layer
-    dropout: dropout prob.
+        input_size: The number of expected features in the input x
+        hidden_size: The number of features in the hidden state h
+        num_layers: Number of recurrent layers.
+        bias: If ``False``, then the layer does not use bias weights b_ih and b_hh.
+            Default: ``True``
+        batch_first: If ``True``, then the input and output tensors are provided
+            as (batch, seq, feature)
+        dropout: If non-zero, introduces a dropout layer on the outputs of each
+            RNN layer except the last layer
+
+    Inputs: input
+        - **input** (seq_len, batch, input_size): tensor containing the features
+          of the input sequence.
+          The input can also be a packed variable length sequence.
+          See :func:`torch.nn.utils.rnn.pack_padded_sequence` for details.
+
+    Outputs: output, h_n
+        - **output** (seq_len, batch, hidden_size * num_directions): tensor
+          containing the output features `(h_t)` from the last layer of the RNN,
+          for each t. If a :class:`torch.nn.utils.rnn.PackedSequence` has been
+          given as the input, the output will also be a packed sequence.
+        - **h_n** hidden state at last time point
+
+    Attributes:
+
     """
     def __init__(self, mode, input_size, dilations, hidden_sizes, dropout):
+
         super(DilatedRNN, self).__init__()
 
         assert len(hidden_sizes) == len(dilations)
@@ -20,25 +41,10 @@ class DilatedRNN(nn.Module):
         next_input_size = input_size
 
         for hidden_size in hidden_sizes:
-            if mode == "RNN":
-                cell = nn.RNN(input_size=next_input_size, hidden_size=hidden_size,
-                              dropout=dropout, num_layers=1)
-            elif mode == "LSTM":
-                cell = nn.LSTM(input_size=next_input_size, hidden_size=hidden_size,
-                               dropout=dropout, num_layers=1)
-            elif mode == "GRU":
-                cell = nn.GRU(input_size=next_input_size, hidden_size=hidden_size,
-                              dropout=dropout, num_layers=1)
-            self.cells.append(cell)
+            self.cells.append(mode(input_size=next_input_size, hidden_size=hidden_size,
+                              dropout=dropout, num_layers=1))
             next_input_size = hidden_size
 
-
-    """
-    Args:
-    inputs: [num_steps, batch_size, input_size]
-    rate: integer
-    output: [num_steps, batch_size, hidden_size]
-    """
     def _padinputs(self, inputs, rate):
 
         num_steps = len(inputs)
@@ -76,16 +82,10 @@ class DilatedRNN(nn.Module):
 
         # reshape it to [dilated_num_steps*rate, batch_size, hidden_size]
         outputs = self._unstack(dilated_outputs, rate)
-        #outputs = dilated_outputs.view(dilated_num_steps*rate, -1, dilated_outputs.shape[2])
 
         # remove padded zeros so output is [num_steps, batch_size, hidden_size]
         return outputs[:inputs.size(0)]
 
-    """
-    Args:
-    input: [num_steps, batch_size, input_size]
-    output: [num_steps, batch_size, hidden_size]
-    """
     def forward(self, x):
         for cell, dilation in zip(self.cells, self.dilations):
             x = self._dilated_RNN(cell, x, dilation)
