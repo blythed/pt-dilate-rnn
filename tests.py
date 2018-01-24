@@ -73,9 +73,9 @@ class TestStackInputs(unittest.TestCase):
         self.assertEqual(chunked.size(1), 8)
         self.assertEqual(chunked.size(2), 13)
 
-        self.assertTrue(torch.equal(x[0::4, 0].numpy(), chunked[:, 0, :]))
-        self.assertTrue(torch.equal(x[1::4, 0].numpy(), chunked[:, 3, :]))
-        self.assertTrue(torch.equal(x[2::4, 0].numpy(), chunked[:, 5, :]))
+        self.assertTrue(torch.equal(x[0::4, 0], chunked[:, 0, :]))
+        self.assertTrue(torch.equal(x[1::4, 0], chunked[:, 3, :]))
+        self.assertTrue(torch.equal(x[2::4, 0], chunked[:, 5, :]))
 
 
 class TestUnstackInputs(unittest.TestCase):
