@@ -7,7 +7,16 @@ use_cuda = torch.cuda.is_available()
 
 class DilatedRNN(nn.Module):
     """
+    Applies a multi-layer dilated RNN (drnn) to an input sequence.
+
+    Each layer implements the following recurrence, where $r$ is the rate:
+
+        $$h_{t} = f(x_t, h_{t - r})$$
+
+    The recurrence type is given my the mode.
+
     Args:
+        mode: RNN class to implement forward steps in each layer
         input_size: The number of expected features in the input x
         hidden_size: The number of features in the hidden state h
         num_layers: Number of recurrent layers.
@@ -19,17 +28,18 @@ class DilatedRNN(nn.Module):
             RNN layer except the last layer
 
     Inputs: input
-        - **input** (seq_len, batch, input_size): tensor containing the features
-          of the input sequence.
-          The input can also be a packed variable length sequence.
-          See :func:`torch.nn.utils.rnn.pack_padded_sequence` for details.
+        input: (seq_len, batch, input_size): tensor containing the features
+                of the input sequence.
 
     Outputs: output, h_n
-        - **output** (seq_len, batch, hidden_size * num_directions): tensor
-          containing the output features `(h_t)` from the last layer of the RNN,
-          for each t. If a :class:`torch.nn.utils.rnn.PackedSequence` has been
-          given as the input, the output will also be a packed sequence.
-        - **h_n** hidden state at last time point
+        output: (seq_len, batch, hidden_size * num_directions): tensor
+                 containing the output features `(h_t)` from the last layer of the RNN,
+                 for each t. If a :class:`torch.nn.utils.rnn.PackedSequence` has been
+                 given as the input, the output will also be a packed sequence.
+        h_n: hidden state at last time point
+
+    Attributes:
+        cells: list of rnn instances for each layer
 
     """
     def __init__(self, mode, input_size, dilations, hidden_sizes, dropout):
@@ -83,19 +93,14 @@ class DilatedRNN(nn.Module):
 
     def _dilated_RNN(self, cell, inputs, rate):
 
-        # add zeros to last few time steps if not zero mod rate
         padded_inputs = self._padinputs(inputs, rate)
 
-        # dilated_inputs is of size [dilated_num_steps, rate*batch_size, input_size]
         dilated_inputs = self._stack(padded_inputs, rate)
 
-        # output is of size [dilated_num_steps, rate*batch_size, hidden_size]
         dilated_outputs, _ = cell(dilated_inputs)
 
-        # reshape it to [dilated_num_steps*rate, batch_size, hidden_size]
         outputs = self._unstack(dilated_outputs, rate)
 
-        # remove padded zeros so output is [num_steps, batch_size, hidden_size]
         return outputs[:inputs.size(0)]
 
     def forward(self, x):
