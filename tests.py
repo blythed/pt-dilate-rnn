@@ -1,6 +1,7 @@
 import unittest
 import torch
 from dilated_rnn import DilatedRNN
+import random
 
 
 use_cuda = torch.cuda.is_available()
@@ -145,6 +146,59 @@ class TestReuse(unittest.TestCase):
         drnn(x)
 
         self.assertTrue(torch.equal(x.data, y.data))
+
+
+class ToyModel(torch.nn.Module):
+    def __init__(self):
+        torch.nn.Module.__init__(self)
+        self.embedding = torch.nn.Embedding(26, 26)
+        self.drnn = DilatedRNN(
+            mode=torch.nn.GRU,
+            input_size=26,
+            dilations=[1, 2],
+            hidden_sizes=[26, 26],
+            dropout=0.5
+        )
+
+    def forward(self, input):
+        return self.drnn(self.embedding(input))
+
+
+class TestLearn(unittest.TestCase):
+    def test(self):
+
+        data = []
+        for i in range(1000):
+            start = random.randint(0, 26)
+            data.append([x % 26 for x in range(start, start + 26)])
+
+        data = torch.LongTensor(data).transpose(1, 0)
+        data = torch.autograd.Variable(data)
+
+        model = ToyModel()
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        criterion = torch.nn.CrossEntropyLoss()
+
+        for epoch in range(20):
+            for i in range(100):
+
+                batch = data[:, i * 10: (i + 1) * 10]
+
+                optimizer.zero_grad()
+
+                output = model(batch[:-1])
+
+                loss = 0
+
+                for i in range(output.size(1)):
+                    loss += criterion(output[:, i, :], batch[1:, i])
+
+                loss.backward()
+
+                optimizer.step()
+
+                print(loss.data[0])
+
 
 
 if __name__ == "__main__":
