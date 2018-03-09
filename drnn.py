@@ -131,10 +131,12 @@ class DRNN(nn.Module):
 
     def init_hidden(self, batch_size, hidden_dim):
         hidden = autograd.Variable(torch.zeros(batch_size, hidden_dim))
-        hidden = hidden.cuda()
+        if use_cuda:
+            hidden = hidden.cuda()
         if self.cell_type == "LSTM":
             memory = autograd.Variable(torch.zeros(batch_size, hidden_dim))
-            memory = memory.cuda()
+            if use_cuda:
+                memory = memory.cuda()
             return (hidden, memory)
         else:
             return hidden
