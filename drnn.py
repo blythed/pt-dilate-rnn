@@ -1,6 +1,6 @@
 ###
 # taken from https://github.com/zalandoresearch/pt-dilate-rnn
-# modifications done by James Sutton on March 2nd
+# modifications done by @zeryx on March 2nd
 
 import torch
 import torch.nn as nn
@@ -118,6 +118,7 @@ class DRNN(nn.Module):
 
         return inputs, dilated_steps
 
+    # Changed by @zeryx, made this easier to read and step through by turning it into a regular for loop constructor.
     def _prepare_inputs(self, inputs, rate):
         comp = []
         for j in range(rate):
